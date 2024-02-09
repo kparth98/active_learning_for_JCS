@@ -38,32 +38,57 @@ end
 Comm_param.PTot_dBm = 30;% in dBm                            % base station TX power constraint (in dBm)
 Comm_param.SINR_constraint_dB = 30*ones(Comm_param.num_users,1);        % minimum SINR for each user for communication
 
-Tmax = N_grid;
+Tmax = 50;
 %% 
 f_fine = linspace(-1,1,10000);
 A_TX_fine = exp(1i*pi*BS_param.loc_tx'*f_fine);
 noise_std = 10^(BS_param.noise_sensing_dBm/10);
 
-for t=1:Tmax
-    f_target = f_grid(t); % sampling each grid point 
-    w_t = getBeamformerJCS(BS_param, Comm_param, f_target);
+%% Define UCB algorithm params:
+beta = 3;
+delta = 0.05;
+UCB_grid = 1e6 * ones(N_grid, 1);
+initial_guess_theta_idx = randi(N_grid);
+real_theta_idx = Target_param.loc_idx;
+visit_counts = zeros(N_grid, 1);
+avg_rewards = zeros(N_grid, 1);
 
-    % beampattern
-    plot(f_fine, 10*log10(abs(w_t'*A_TX_fine)));
-    hold on
-    xline(f_grid);
-    xline(f_grid(Target_param.loc_idx),'r')
-    xline(f_target,'b')
-    hold off
+%% Compute optimal surrogate
+opt_wt = getBeamformerJCS(BS_param, Comm_param, f_grid(real_theta_idx));
+ct = 1; % keeping the comm. symbol constant for now
+x_t = opt_wt*ct;
+y_t = G*x_t;
+opt_surrogate = abs(x_t'*y_t);
+disp(opt_surrogate)
+
+%% UCB algorithm
+cumu_regret_array = zeros(Tmax, 1);
+
+for t=1:Tmax
+    [idx, UCB_grid] = get_ucb(avg_rewards, visit_counts, beta, delta);
+    f_target = f_grid(idx); % sampling each grid point 
+    w_t = getBeamformerJCS(BS_param, Comm_param, f_target);
 
     ct = 1; % keeping the comm. symbol constant for now
     x_t = w_t*ct;
     
     noise = noise_std*(randn(N_RX,1) + 1i*randn(N_RX,1))/sqrt(2);
-    y_t = G*x_t ; % + noise
+    y_t = G*x_t + noise;
 
     surrogate_fn = abs(x_t'*y_t);
-    disp(surrogate_fn);
+    if t == 1
+        cumu_regret_array(t) = opt_surrogate - surrogate_fn;
+    else
+        cumu_regret_array(t) = cumu_regret_array(t-1) + opt_surrogate - surrogate_fn;
+    end
+    
+    % update counts
+    visit_count_current_idx = visit_counts(idx);
+    visit_counts(idx) = visit_count_current_idx + 1;
+    avg_rewards(idx) = (avg_rewards(idx) * visit_count_current_idx ...
+        + surrogate_fn) / (visit_count_current_idx + 1);
 end
+
+plot(cumu_regret_array)
 
 
