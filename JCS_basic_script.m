@@ -1,5 +1,5 @@
 %% Basic Script for Joint Comm. and Sensing
-clear all
+clear;clc; close all;
 
 %% Define Parameters (following Yonina's paper on CRB minimisation)
 N_TX = 16;                      % No. of transmit(TX) antennas at base station
@@ -44,26 +44,33 @@ f_fine = linspace(-1,1,10000);
 A_TX_fine = exp(1i*pi*BS_param.loc_tx'*f_fine);
 noise_std = 10^(BS_param.noise_sensing_dBm/10);
 
-for t=1:Tmax
-    f_target = f_grid(t); % sampling each grid point 
-    w_t = getBeamformerJCS(BS_param, Comm_param, f_target);
+% for t=1:Tmax
+% t = Target_param.loc_idx + 1;
+t = user_loc_idx;
+f_target = f_grid(t); % sampling each grid point 
+w_t = getBeamformerJCS(BS_param, Comm_param, f_target);
 
-    % beampattern
-    plot(f_fine, 10*log10(abs(w_t'*A_TX_fine)));
-    hold on
-    xline(f_grid);
-    xline(f_grid(Target_param.loc_idx),'r')
-    xline(f_target,'b')
-    hold off
+% beampattern
+% plot(f_fine, 10*log10(abs(w_t'*A_TX_fine))); % what we plot is the 
+plot(f_fine, abs(w_t'*A_TX_fine))
+hold on
+xline(f_grid);
+title('target response (probing one direction in the $\theta$ grid)','interpreter','latex')
+% xline(f_grid(Target_param.loc_idx),'r')
+xline(f_target,'b')
+xlabel('target location ($\sin(\theta)$)','interpreter','latex')
+ylabel('response, $|\mathbf{a}_{\rm Tx}(\theta)^H\mathbf{w}|$','interpreter','latex')
+fontsize(16,"points")
+hold off
 
-    ct = 1; % keeping the comm. symbol constant for now
-    x_t = w_t*ct;
-    
-    noise = noise_std*(randn(N_RX,1) + 1i*randn(N_RX,1))/sqrt(2);
-    y_t = G*x_t ; % + noise
+ct = 1; % keeping the comm. symbol constant for now
+x_t = w_t*ct;
 
-    surrogate_fn = abs(x_t'*y_t);
-    disp(surrogate_fn);
-end
+noise = noise_std*(randn(N_RX,1) + 1i*randn(N_RX,1))/sqrt(2);
+y_t = G*x_t + noise;
+
+surrogate_fn = abs(x_t'*y_t);
+disp(surrogate_fn);
+% end
 
 

@@ -1,4 +1,4 @@
-function w=getBeamformerJCS(BS_param,Comm_param,f_targets)
+function w=getBeamformerMultiDirection(BS_param,Comm_param,f_targets)
 % Based on Yonina Eldar's paper on CRB optimisation
 
     n_targets = length(f_targets);
@@ -24,12 +24,6 @@ function w=getBeamformerJCS(BS_param,Comm_param,f_targets)
 
             w = x1*u1 + x2*au;
         end
-    elseif n_targets > 1 && Comm_param.num_users == 1
-        N_TX = size(BS_param.A_TX,1);
-        A_theta = exp(1i*pi*BS_param.loc_tx'*f_targets);
-        a = sum(A_theta, 2);
-        P_T = 10^(Comm_param.PTot_dBm/10);
-        w = sqrt(P_T/N_TX) / norm(a) * a;
     else
         error('not implemented')
     end
