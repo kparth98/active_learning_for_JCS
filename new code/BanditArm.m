@@ -40,9 +40,20 @@ classdef BanditArm
           lcb = obj.mean_reward - obj.explore_bonus;
       end
 
-      function obj=pull_arm(obj,G,noise,t)
-        reward = abs(obj.rx_beam'*(G*obj.tx_beam + noise));
+      % function obj=pull_arm(obj,G,noise,t)
+      %   reward = abs(obj.rx_beam'*(G*obj.tx_beam + noise));
+      % 
+      %   obj.cumm_reward = obj.cumm_reward + reward;
+      %   obj.pull_count = obj.pull_count + 1;
+      %   obj.mean_reward = obj.cumm_reward/obj.pull_count;
+      % 
+      %   % obj.mean_reward_squared = (reward^2 + obj.mean_reward_squared*obj.pull_count)/(obj.pull_count+1);
+      %   % obj.var_reward = obj.mean_reward_squared - obj.mean_reward^2;
+      % 
+      %   obj.explore_bonus = obj.sigma_h*sqrt((4*log(pi*t^2/(3*obj.confidence)))/obj.pull_count);
+      % end
 
+      function obj=update_arm(obj,reward,t)
         obj.cumm_reward = obj.cumm_reward + reward;
         obj.pull_count = obj.pull_count + 1;
         obj.mean_reward = obj.cumm_reward/obj.pull_count;
