@@ -4,6 +4,7 @@ classdef BanditArm
       mean_reward
       cumm_reward
       explore_bonus
+      exp_bonus_const
 
       tx_beam
       rx_beam
@@ -18,6 +19,8 @@ classdef BanditArm
           obj.mean_reward = 0;
           obj.cumm_reward = 0;
           obj.explore_bonus = Inf;
+          N = length(tx_beam);
+          obj.exp_bonus_const = log(pi*log2(N)/(3*confidence));
           
           if nargin>0
               obj.tx_beam = tx_beam;
@@ -61,7 +64,8 @@ classdef BanditArm
         % obj.mean_reward_squared = (reward^2 + obj.mean_reward_squared*obj.pull_count)/(obj.pull_count+1);
         % obj.var_reward = obj.mean_reward_squared - obj.mean_reward^2;
       
-        obj.explore_bonus = obj.sigma_h*sqrt((4*log(pi*t^2/(3*obj.confidence)))/obj.pull_count);
+        % obj.explore_bonus = obj.sigma_h*sqrt((4*log(pi*obj.pull_count^2/(3*obj.confidence)))/obj.pull_count);
+        obj.explore_bonus = obj.sigma_h*sqrt(2*(obj.exp_bonus_const + 2*log(obj.pull_count))/obj.pull_count);
       end
    end
 end
